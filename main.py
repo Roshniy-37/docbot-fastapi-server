@@ -6,7 +6,7 @@ app = FastAPI()
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["https://chatdoctor.onrender.com"],  
+    allow_origins=["https://chatdoctor.onrender.com/"],  
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -17,12 +17,16 @@ generator = pipeline("text-generation", model="linkanjarad/Doctor-OPT-350M")
 @app.post("/api/chat")
 async def chat(request: Request):
     data = await request.json()
-    prompt = f"Patient: {data['message']}\nDoctor: <start>"
-    output = generator(
-        prompt,
-        do_sample=True,
-        min_length=10,
-        max_length=500,
-        temperature=0.5
-    )
-    return {"response": output[0]["generated_text"]}
+    message = data.get("message", "")
+    print(f"Received message: {message}")
+    if not message:
+        return {"response": "Please provide a message."}
+    
+    try:
+        response = generator(message, max_length=100, do_sample=True)[0]["generated_text"]
+        print(f"Generated response: {response}")
+    except Exception as e:
+        print(f"Error generating response: {e}")
+        return {"response": "Error generating response."}
+    
+    return {"response": response}
